@@ -1,0 +1,44 @@
+<h1 style="color: #4485b8;"> {{ cloudname }} </h1>
+<p><strong style="color: #000;">Notification from:</strong>&nbsp;</p>
+<h2  style="color: #4485b8;"> <%= @event['client']['name'] %> </h2>
+<table class="editorDemoTable" style="vertical-align: top; height: 124px; width: 663px;">
+<tbody>
+<tr style="height: 25px;">
+<td style="min-width: 140px; width: 135px; height: 25px;"><strong>Address</strong></td>
+<td style="width: 527px; height: 25px;"> <%= @event['client']['address'] %> </td>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;"><strong>Check Name</strong></td>
+<td style="width: 527px; height: 25px;"> <%= @event['check']['name'] %> </td>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;"><strong>Command&nbsp;</strong></td>
+<td style="width: 527px; height: 25px;"> <%= command %> </td>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;"><strong>Status</strong></td>
+<td style="width: 527px; height: 25px;"><%= status_to_string %></td>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;" valign="top"><strong>Output</strong></td>
+<td style="width: 527px; height: 25px;"> <%= @event['check']['output'] %> </td>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;" valign="top"><strong>Occurences</strong></td>
+<td style="width: 527px; height: 25px;"> <%= @event['occurrences'] %> </td>
+</tr>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;" valign="top"><strong>Time command was issued</strong></td>
+<td style="width: 527px; heiht: 25px;"> <%= Time.at(@event['check']['issued'])  %> </td>
+</tr>
+</tr>
+<tr style="height: 25px;">
+<td style="width: 135px; height: 25px;" valign="top"><strong>Link to dashboard</strong></td>
+<td style="width: 527px; heiht: 25px;"> <%='{{ dashboard }}' + @event['client']['name'] %> </td>
+</tr>
+</tbody>
+</table>
+<p><em>&nbsp;</em></p>
+<hr />
+<p><em>&copy;  DE OpenStack Infra Team </em></p>

@@ -1,0 +1,8 @@
+Host: <%= @event['client']['name'] %>
+Timestamp: <%= Time.at(@event['check']['issued']) %>
+Address:  <%= @event['client']['address'] %>
+Check Name:  <%= @event['check']['name'] %>
+Command:  <%= command %>
+Status:  <%= status_to_string %>
+Output: <%= @event['check']['output'] %>
+Occurrences:  <%= @event['occurrences'] %>

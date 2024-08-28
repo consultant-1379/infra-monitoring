@@ -1,0 +1,15 @@
+disabled_services:
+    - firewalld
+
+infra_images:
+  sensu_img_name: sensu-img.qcow2
+  logstash_img_name: logstash-img.qcow2
+  prometheus_img_name: CentOS-7-x86_64-GenericCloud-2003.qcow2
+
+# used for testing, will be deleted
+images:
+  img1: test1.txt
+  img2: test2.txt
+  img3: test3.txt
+
+packer_pkgs: [packer, tigervnc]

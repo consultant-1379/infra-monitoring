@@ -1,0 +1,36 @@
+---
+- name: Remove logstash image from packer output directories
+  file:
+    path: "{{ monitor_dir.stdout }}/packer/output_logstash/"
+    state: absent
+
+- name: Copy Packer Kickstart file for logstash
+  copy:
+    src: http/logstash-ks.cfg
+    dest: "{{ monitor_dir.stdout }}/packer/http"
+  
+- name: Generate Monitoring VM packer files from templates for logstash
+  template:
+    src: '{{ tf_template }}'
+    dest: "{{ monitor_dir.stdout }}/packer/{{ tf_template | regex_replace('.j2','') }}"
+  loop: [logstash.json.j2, logstash.yaml.j2]
+  loop_control:
+    loop_var: tf_template
+    label: "{{ tf_template }}"
+
+- name: Build Logstash Image
+  shell: 'source ~/.bash_profile ; cd "{{ monitor_dir.stdout }}"/packer ; packer build logstash.json &>/dev/null'
+  environment:
+    PACKER_LOG: 1
+    PACKER_LOG_PATH: /var/tmp/logstash_debug.log
+
+- name: Copy logstash image to {{ monitor_dir.stdout }} (defined in virsh-pool) directory
+  copy:
+    src: "{{ monitor_dir.stdout }}/packer/output_logstash/{{ infra_images['logstash_img_name'] }}"
+    dest: "{{ monitor_dir.stdout }}"
+    remote_src: yes
+
+- name: Remove logstash image from packer output directories
+  file:
+    path: "{{ monitor_dir.stdout }}/packer/output_logstash/"
+    state: absent

@@ -1,0 +1,162 @@
+{% if temp_var == 'chassis_health' %}
+{
+  "checks": {
+    "{{ chassis_id.0.name }}_Health": {
+      "standalone": true,
+      "interval": 60,
+      "source": "{{ chassis_id.0.name }}",
+      "contact": "{{ support_email }}",
+      "command": "/etc/sensu/plugins/check_hp_bladechassis -H {{ chassis_id.1 }} -v",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'chassis_ping' %}
+{
+  "checks": {
+    "{{ chassis_id.0.name }}_ping": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ chassis_id.0.name }}",
+      "command": "/opt/sensu/embedded/bin//check-ping.rb -rh {{ chassis_id.1 }}",
+    }
+  }
+}
+{% elif temp_var == 'chassis_vc' %}
+{
+  "checks": {
+    "{{ chassis_id.0.name }}_vc": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ chassis_id.0.name }}",
+      "contact": "{{ support_email }}",
+      "command": "/etc/sensu/plugins/check_snmp_hpvc.pl -H {{ chassis_id.1 }} -t uplinks -u x{{3 if index | int is divisibleby 2 else 2}}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'hpe' %}
+{
+  "checks": {
+    "{{ hpe_var.0.name }}_ILO_Health": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ hpe_var.0.name }}",
+      "contact": "{{ support_email }}",
+      "command": "/etc/sensu/plugins/check_ilo2_health.pl -H {{ hpe_var.1 }} -u {{ hpe_user }} -p {{ hpe_pass }} -n 1 -3 -t 120",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'vnx' %}
+{
+  "checks": {
+    "{{ vnx.name }}_{{ vnx_var }}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ vnx.name }}",
+      "contact": "{{ support_email }}",
+      "command": "/etc/sensu/plugins/check_emc_clariion_vnx.pl -H {{ vnx.vnx_ip[0] }} -u {{ vnx.vnx_user }} -p {{ vnx.vnx_pass }} -t {{ vnx_var }}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'vnx_a_b' %}
+{
+  "checks": {
+    "{{ vnx.name }}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ vnx.name }}",
+      "contact": "{{ support_email }}",
+      "command": "/etc/sensu/plugins/check_emc_clariion_vnx.pl -H {{ vnx_var.0 }} -u {{ vnx.vnx_user }} -p {{ vnx.vnx_pass }} -t {{ vnx_var.1 }}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'unity' %}
+{
+  "checks": {
+    "{{ unity.name }}-{{unity_var}}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ unity.name }}",
+      "contact": "{{ support_email }}",
+      "command": "/etc/sensu/plugins/check_unity2.py -H {{ unity.unity_ip }} -m {{unity_var}} -u {{ unity.unity_user }} -p {{ unity.unity_pass }}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'idrac_ping' %}
+{
+  "checks": {
+    "Ping_Test_{{idrac_var.name}}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{idrac_var.name}}",
+      "contact": "Cloud_Team",
+      "command": "/opt/sensu/embedded/bin/check-ping.rb -c2 -h {{idrac_var.idrac_ip}}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'idrac_cpu' %}
+{
+  "checks": {
+    "CPU_{{ idrac_var.name }}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{ idrac_var.name }}",
+      "contact": "Cloud_Team",
+      "command": "/etc/sensu/plugins/check_idrac_cpu.sh {{ idrac_var.idrac_ip}}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'idrac_disk' %}
+{
+  "checks": {
+    "Disk_{{idrac_var.name}}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{idrac_var.name}}",
+      "contact": "Cloud_Team",
+      "command": "/etc/sensu/plugins/check_idrac_disk.sh {{idrac_var.idrac_ip}}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% elif temp_var == 'idrac_memory' %}
+{
+  "checks": {
+    "Memory_{{idrac_var.name}}": {
+      "standalone": true,
+      "interval": 300,
+      "source": "{{idrac_var.name}}",
+      "contact": "Cloud_Team",
+      "command": "/etc/sensu/plugins/check_idrac_memory.sh {{idrac_var.idrac_ip}}",
+      "handlers": [
+        "mailer"
+      ]
+    }
+  }
+}
+{% endif %}

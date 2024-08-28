@@ -1,0 +1,45 @@
+#director ansible_host={% raw %} {{director_public_ip}} {% endraw %} ansible_user=stack ansible_ssh_common_args=" -o StrictHostKeyChecking=no "
+[sensu_masters]
+{{cloudname}}-sensu
+
+[redis_servers]
+{{cloudname}}-sensu
+
+[rabbitmq_servers]
+{{cloudname}}-sensu
+
+[elk]
+{{cloudname}}-logstash
+
+[prometheus]
+{{cloudname}}-prometheus
+
+[infra_ssh]
+{{cloudname}}-sensu
+{{cloudname}}-logstash
+{{cloudname}}-prometheus
+
+[elk_client]
+{{cloudname}}-sensu
+
+{% if number_of_dl_servers == '2' %}
+[monitorhost]
+
+{% endif %}
+[mon_vm]
+ieatmonitvm2.athtem.eei.ericsson.se
+
+[directorhost]
+
+
+[director_vm]
+
+[controller:vars]
+my_group_name=controller
+
+[controller]
+
+[compute:vars]
+my_group_name=compute
+
+[compute]

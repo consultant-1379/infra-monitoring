@@ -1,0 +1,58 @@
+resource "libvirt_volume" "{{ logstash_shortname }}_vol"{
+  name = "{{ logstash_shortname }}_vol"
+  base_volume_id = libvirt_volume.logstash_base.id
+  pool = "{{ virsh_storage_pool }}"
+}
+# Use CloudInit to add our ssh-key to the instance
+resource "libvirt_cloudinit_disk" "{{ logstash_shortname }}_cloudinit_disk" {
+  name = "{{ logstash_shortname }}_cloudinit_disk"
+  pool = "{{ virsh_storage_pool }}"
+  user_data = <<EOF
+#cloud-config
+chpasswd:
+  expire: False
+  list:
+    - root:$6$1/wSovbfjasgn69x$UxUMv3sI.KZQBUzT53LBzKhtzOfIWd9K0MPLUtF1rhxPlXQLH27QPgNjvL1ol7GnxrXHW4sLCerawHIUGqGza1
+
+local-hostname: "{{ logstash_shortname }}"
+disable_root: 0
+ssh_pwauth: 1
+users:
+  - name: root
+runcmd:
+  - sed -i -e 's/^UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config
+  - systemctl restart sshd
+EOF
+network_config = file("logstash_net_config")
+meta_data = <<EOF
+instance-id: "{{ logstash_shortname }}-001"
+local-hostname: "{{ logstash_shortname }}"
+EOF
+}
+
+resource "libvirt_domain" "{{ logstash_shortname }}" {
+  name = "{{ logstash_shortname }}"
+  memory = "98304"
+  vcpu = 16
+  network_interface {
+    bridge= var.ext_bridge
+
+  }
+  cloudinit = libvirt_cloudinit_disk.{{ logstash_shortname }}_cloudinit_disk.id
+  disk {
+   volume_id = libvirt_volume.{{ logstash_shortname }}_vol.id
+  }
+  video {
+    type = "vga"
+  }
+  graphics {
+    type = "vnc"
+    listen_type = "address"
+ }
+}
+
+resource "libvirt_volume" "logstash_base"{
+  name = "{{ infra_images['logstash_img_name'] }}"
+  pool = "{{ virsh_storage_pool }}"
+  format = "qcow2"
+}

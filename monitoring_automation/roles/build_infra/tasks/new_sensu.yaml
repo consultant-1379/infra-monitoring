@@ -1,0 +1,36 @@
+---
+- name: Remove sensu image from packer output directories
+  file:
+    path: "{{ monitor_dir.stdout }}/packer/output_sensu/"
+    state: absent
+ 
+- name: Copy Packer Kickstart file for sensu
+  copy:
+    src: http/sensu-ks.cfg
+    dest: "{{ monitor_dir.stdout }}/packer/http"
+
+- name: Generate Monitoring VM packer files from templates for sensu
+  template:
+    src: '{{ tf_template }}'
+    dest: "{{ monitor_dir.stdout }}/packer/{{ tf_template | regex_replace('.j2','') }}"
+  loop: [sensu.json.j2, sensu.yaml.j2]
+  loop_control:
+    loop_var: tf_template
+    label: "{{ tf_template }}"
+
+- name: Build Sensu Image
+  shell: 'source ~/.bash_profile ; cd /var/lib/libvirt/images/packer ; packer build sensu.json &>/dev/null'
+  environment:
+    PACKER_LOG: 1
+    PACKER_LOG_PATH: /var/tmp/sensu_debug.log
+
+- name: Copy new sensu image to {{ monitor_dir.stdout }} (defined in virsh-pool) directory
+  copy:
+    src: "{{ monitor_dir.stdout }}/packer/output_sensu/{{ infra_images['sensu_img_name'] }}"
+    dest: "{{ monitor_dir.stdout }}"
+    remote_src: yes
+
+- name: Remove sensu image from packer output directories
+  file:
+    path: "{{ monitor_dir.stdout }}/packer/output_sensu/"
+    state: absent

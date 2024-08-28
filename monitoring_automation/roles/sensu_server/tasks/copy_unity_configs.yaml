@@ -1,0 +1,22 @@
+---
+- name: Create unity directory
+  file:
+    path: /etc/sensu/conf.d/standalone/unity/{{unity.name}}
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+
+- set_fact:
+    temp_var: unity
+
+- name: Copy unity templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/unity/{{unity.name}}/{{unity.name}}_{{unity_var}}.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: [dae, disk, system]
+  loop_control:
+    loop_var: unity_var

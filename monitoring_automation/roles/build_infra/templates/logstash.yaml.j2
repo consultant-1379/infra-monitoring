@@ -1,0 +1,90 @@
+{%raw%}---
+- hosts: logstash_vm
+  gather_facts: False
+  become: yes
+  user: centos
+  vars:
+    pkgs: [epel-release, cloud-init, dkms, htop, elinks, tree, kernel-devel, kernel-headers,
+            openssh-server, vim-enhanced, gcc, gcc-c++, perl-devel, make, sysstat, net-tools,
+            curl, wget, jq, vnstat, httpd-tools, python-httplib2, libsemanage-python, java-1.8.0-openjdk,
+            java-1.8.0-openjdk-devel, openssl, openssl-devel, zlib, zlib-devel, libffi-devel]
+    disabled_services: [NetworkManager, firewalld]
+    enabled_services:
+        - chronyd
+  tasks:
+    - name: Create resolv.conf
+      copy:
+        content: |
+          nameserver 159.107.173.12
+          nameserver 159.107.173.3
+          search ericsson.se athtem.eei.ericsson.se
+        dest: /etc/resolv.conf
+    {%endraw%}
+    {% if use_proxy is defined %}
+    
+    - name: Configure yum.conf to use proxy
+      ini_file:
+        path: /etc/yum.conf
+        section: main
+        option: proxy
+        value: '{{ http_proxy }}'
+    {%raw%}
+    - name: Configure yum.conf to only cache packages
+      ini_file:
+        path: /etc/yum.conf
+        section: main
+        option: http_caching
+        value: packages
+    
+    - name: Add Proxy Settings to environment file
+      ini_file:
+        path: /etc/environment
+        section: ""
+        option: '{{item.0}}'
+        value: '{{item.1}}'
+        no_extra_spaces: yes
+      loop: "{{['http_proxy', 'https_proxy', 'no_proxy'] | zip([{% endraw %}'{{http_proxy}}', '{{http_proxy}}', {%raw%}'127.0.0.1,localhost']) | list}}"
+    
+    - name: Source env file
+      shell: source /etc/environment
+    {%endraw%}
+    {% endif %}{%raw%}
+    - name: Create logstash.repo
+      copy:
+        content: |
+            [logstash-2.2]
+            name=logstash repository for 2.2 packages
+            baseurl=http://packages.elasticsearch.org/logstash/2.2/centos
+            gpgcheck=1
+            gpgkey=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+            enabled=1
+        dest: /etc/yum.repos.d/logstash.repo
+
+    - name: upgrade all package
+      yum:
+        name: '*'
+        state: latest
+  
+    - name: Install required packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ pkgs }}"
+      
+    - name: Make sure services are running
+      systemd:
+        state: started
+        enabled: yes
+        name: "{{ item }}"
+      loop: "{{ enabled_services }}"
+    - name: Make sure services are stopped
+      systemd:
+        state: stopped
+        enabled: no
+        name: "{{ item }}"
+      loop: "{{ disabled_services }}"
+    - name: Remove eth0 file
+      file:
+        path: "/etc/sysconfig/network-scripts/ifcfg-eth0"
+        state: absent
+    {%endraw%}

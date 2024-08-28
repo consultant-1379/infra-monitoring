@@ -1,0 +1,11 @@
+{
+  "rabbitmq":
+{
+    "host": "{{ sensu_fqdn }}",
+      "port": 5672,
+    "vhost": "/sensu",
+    "user": "sensu",
+    "password": "{{ sensu_shared_passwd }}"
+        }
+}
+

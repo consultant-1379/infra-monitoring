@@ -1,0 +1,11 @@
+{
+    "filters": {
+        "nine_to_fiver": {
+         "negate": false,
+         "attributes": {
+         "timestamp": "eval: [1,2,3,4,5].include?(Time.at(value).wday) && Time.at(value).hour.between?(9,17)"
+          }
+         }
+      }
+  }
+    

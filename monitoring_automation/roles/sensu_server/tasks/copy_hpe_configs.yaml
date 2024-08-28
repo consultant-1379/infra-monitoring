@@ -1,0 +1,23 @@
+---
+- name: Create hpe directory
+  file:
+    path: /etc/sensu/conf.d/standalone/dlxx/{{item.name | regex_search('[0-9]+')}}
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+  loop: "{{hpe}}"
+
+- set_fact:
+    temp_var: hpe
+
+- name: Copy hpe templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/dlxx/{{hpe_var.0.name | regex_search('[0-9]+')}}/{{hpe_var.0.name}}_ilo_health.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{hpe | subelements('dlx_ip')}}"
+  loop_control:
+    loop_var: hpe_var

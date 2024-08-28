@@ -1,0 +1,80 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  roles:
+    - common_settings
+    - init_monitoring
+  vars_prompt:
+    - name: cloud_type
+      prompt: "Enter the Cloud type to be used. Valid Choices are {{cloud_types|join(', ')}}."
+      private: no
+      default: OpenStack
+    - name: cloudname
+      prompt: "Enter the name of the cloud e.g. cloud7a / POD-B. It should match the domain name i.e. cloud7a.athtem.eei.ericsson.se.\n"
+      private: no
+    - name: external_network_type
+      prompt: "Enter the External network type for this cloud. Valid choices are {{external_network_types|join(', ')}}.\n"
+      private: no
+      default: 'ECN'  
+    - name: network_type
+      prompt: "Enter the network type for this cloud. Valid choices are {{network_types|join(', ')}}.\n"
+      private: no
+      default: '4'
+    - name: hw_type
+      prompt: "Enter the hardware type (Valid choices are: {{hardware_choices| join(', ')}})"
+      private: no
+      default: hpe
+    - name: storage_type
+      prompt: "Enter the storage type (Valid choices are: {{storage_choices| join(', ')}})"
+      private: no
+      default: 'vnx'
+    - name: new_sensu_image
+      prompt: "Re-use Existing Sensu Image (Valid choices are: {{sensu_img_choices| join(', ')}})"
+      private: no
+      default: reuse
+    - name: new_logstash_image
+      prompt: "Re-use Existing Logstash Image (Valid choices are: {{logstash_img_choices| join(', ')}})"
+      private: no
+      default: reuse
+    - name: virsh_storage_pool_image
+      prompt: "Enter virsh storage pool name to deploy monitoring VMs (Eg. faststore).\n"
+      private: no
+    - name: number_of_chassis
+      prompt: "Number of HPE Chassis in Cloud Deployment.\n"
+      private: no
+    - name: number_of_dl_servers
+      prompt: "Number of HPE DL Servers in Cloud Deployment.\n"
+      private: no
+    - name: number_of_dell_servers
+      prompt: "Number of DELL Rack Servers in Cloud Deployment.\n"
+      private: no
+
+  pre_tasks:
+      - name: Validate cloud type
+        assert:
+          that: cloud_type in cloud_types
+          fail_msg: "Cloud type '{{cloud_type}}' is incorrect. It must be one of {{cloud_types|join(',')}}"
+      - name: Validate network type
+        assert:
+          that: network_type in network_types
+          fail_msg: "Network type '{{network_type}}' is incorrect. It must be one of {{network_types|join(',')}}"
+      - name: Validate Extenal network type
+        assert:
+          that: external_network_type|upper in external_network_types
+          fail_msg: "External Network type '{{external_network_type}}' is incorrect. It must be one of {{external_network_types|join(',')}}"
+      - name: Validate hardware type
+        assert:
+          that: hw_type in hardware_choices
+          fail_msg: "Hardware type '{{hw_type}}' is invalid. It must be one of {{hardware_choices|join(', ')}}"
+      - name: Validate storage type
+        assert:
+          that: storage_type in storage_choices
+          fail_msg: "Storage type '{{storage_type}}' is invalid. It must be one of {{storage_choices|join(', ')}}"
+      - name: Validate new sensu image
+        assert:
+          that: new_sensu_image in sensu_img_choices
+          fail_msg: "Image choice '{{new_sensu_image}}' is invalid. It must be one of {{sensu_img_choices|join(', ')}}"
+      - name: Validate new sensu image
+        assert:
+          that: new_logstash_image in logstash_img_choices
+          fail_msg: "Image choice '{{new_logstash_image}}' is invalid. It must be one of {{logstash_img_choices|join(', ')}}"

@@ -1,0 +1,24 @@
+
+# DNS Servers
+dns_servers:
+  - 159.107.173.12
+  - 159.107.173.3
+# NTP Servers
+ntp_servers:
+  - 159.107.173.12
+  - 159.107.173.223
+
+timezone: Europe/Dublin
+
+logstash_fqdn: "{{ lookup('dig',logstash_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first)[:-1] }}"
+sensu_fqdn: "{{ lookup('dig',sensu_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first)[:-1] }}"
+prometheus_fqdn: "{{ lookup('dig',prometheus_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first)[:-1] }}"
+logstash_shortname: "{{ lookup('dig',logstash_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first).split('.')|first }}"
+sensu_shortname: "{{ lookup('dig',sensu_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first).split('.')|first }}"
+prometheus_shortname: "{{ lookup('dig',prometheus_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first).split('.')|first }}"
+admin_mail: finbar.ryan@ericsson.com
+support_1: "Cloud_Team"
+support_1_email: "PDLDEOPENS@pdl.internal.ericsson.com"
+support_2: "support_2"
+support_2_email: "PDLDEOPENS@pdl.internal.ericsson.com"
+sensu_mail: "sensu@{{cloudname}}"

@@ -1,0 +1,11 @@
+{
+  "client": {
+    "name": "{{ sensu_shortname }}",
+    "address": "{{ sensu_public_ip_cidr |  ipaddr('address')}}",
+    "environment": "production",
+    "mail_to": ["{{ admin_mail }}"],
+      "subscriptions": [
+        "sensu_masters"
+]
+  }
+}

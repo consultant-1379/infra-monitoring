@@ -1,0 +1,42 @@
+---
+- name: Add sensu repo
+  yum_repository:
+    name: sensu-1.9.0-el7-rpms
+    description: sensu 1.9
+    file: sensu
+    baseurl: http://10.44.77.158/repo2/monitoring/sensu-el7-rpms
+    enabled: yes
+    gpgcheck: no
+
+- name: Add rabbitmq server repository
+  yum_repository:
+    name: bintray-rabbitmq-server
+    description: bintray-rabbitmq-server
+    baseurl: https://dl.bintray.com/rabbitmq/rpm/rabbitmq-server/v3.7.x/el/7/
+    gpgcheck: no
+    enabled: yes
+    state: present
+
+- name: Add rabbitmq_erlang repository part1
+  yum_repository:
+    name: rabbitmq_erlang
+    description: rabbitmq_erlang
+    file: rabbitmq_erlang
+    baseurl: https://packagecloud.io/rabbitmq/erlang/el/7/$basearch
+    repo_gpgcheck: yes
+    gpgkey: https://packagecloud.io/rabbitmq/erlang/gpgkey
+    gpgcheck: no
+    enabled: yes
+    state: present
+
+- name: Add rabbitmq_erlang repository part2
+  yum_repository:
+    name: rabbitmq_erlang-source
+    description: rabbitmq_erlang-source
+    file: rabbitmq_erlang
+    baseurl: https://packagecloud.io/rabbitmq/erlang/el/7/SRPMS
+    repo_gpgcheck: yes
+    gpgkey: https://packagecloud.io/rabbitmq/erlang/gpgkey
+    gpgcheck: no
+    enabled: yes
+    state: present

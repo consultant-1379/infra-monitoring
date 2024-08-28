@@ -1,0 +1,22 @@
+{
+    "mailer" :  {
+        "mail_from": "{{ sensu_mail }}",
+        "mail_to": "{{ admin_mail }}",
+        "delivery_method": "smtp",
+        "smtp_address": "smtp.internal.ericsson.com",
+        "smtp_port": "25",
+        "smtp_domain": "ericsson.com"
+    },
+    "handlers": {
+        "mailer": {
+            "type": "pipe",
+            "command": "/opt/sensu/embedded/bin/handler-mailer.rb -t /etc/sensu/conf.d/mail_config/html_template.erb -s '{{ cloudname }}' -c html",
+         "filter": "state_change_only",
+                  "severities": ["ok","warning","critical","unknown"],
+            "handle_silenced": true,
+            "handle_flapping": true
+
+        }
+    }
+}
+

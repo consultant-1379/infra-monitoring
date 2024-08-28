@@ -1,0 +1,77 @@
+---
+- name: Create idrac directories
+  file:
+    path: /etc/sensu/conf.d/standalone/IDRAC/idrac{{item}}
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+  with_sequence: count="{{idrac | length -1}}"
+
+- name: Create idrac director directory
+  file:
+    path: /etc/sensu/conf.d/standalone/IDRAC/Director_host_idrac
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+
+- set_fact:
+    temp_var: idrac_ping
+
+- name: Copy idrac ping templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/IDRAC/{{'Director_host_idrac' if index | int == 0 else 'idrac' + index | string}}/{{idrac_var.name}}_ping_test.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{ idrac }}"
+  loop_control:
+    loop_var: idrac_var
+    index_var: index
+
+- set_fact:
+    temp_var: idrac_cpu
+
+- name: Copy idrac cpu templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/IDRAC/{{'Director_host_idrac' if index | int == 0 else 'idrac' + index | string}}/{{idrac_var.name}}_cpu.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{ idrac }}"
+  loop_control:
+    loop_var: idrac_var
+    index_var: index
+
+- set_fact:
+    temp_var: idrac_disk
+
+- name: Copy idrac disk templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/IDRAC/{{'Director_host_idrac' if index | int == 0 else 'idrac' + index | string}}/{{idrac_var.name}}_disk.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{ idrac }}"
+  loop_control:
+    loop_var: idrac_var
+    index_var: index
+
+- set_fact:
+    temp_var: idrac_memory
+
+- name: Copy idrac memory templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/IDRAC/{{'Director_host_idrac' if index | int == 0 else 'idrac' + index | string}}/{{idrac_var.name}}_memory.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{ idrac }}"
+  loop_control:
+    loop_var: idrac_var
+    index_var: index

@@ -1,0 +1,35 @@
+cloud_types:
+    - OpenStack
+    - VMware
+    - CNIS
+os_types:
+    - redhat
+    - suse
+external_network_types:
+    - ECN
+    - GGN
+chassis_half_choice:
+    - top
+    - bottom
+    - na
+network_types:
+    - '4'
+    - '6'
+    - 'dual'
+hardware_choices:
+    - dell
+    - hpe
+storage_choices:
+    - vnx
+    - unity
+    - 3par
+    - ceph
+sensu_img_choices:
+    - new
+    - reuse
+logstash_img_choices:
+    - new
+    - reuse
+separate_mon_host:
+    - true
+    - false

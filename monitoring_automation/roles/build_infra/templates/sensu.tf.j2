@@ -1,0 +1,58 @@
+resource "libvirt_volume" "{{ sensu_shortname }}_vol"{
+  name = "{{ sensu_shortname }}_vol"
+  base_volume_id = libvirt_volume.sensu_base.id
+  pool = "{{ virsh_storage_pool }}"
+}
+# Use CloudInit to add our ssh-key to the instance
+resource "libvirt_cloudinit_disk" "{{ sensu_shortname }}_cloudinit_disk" {
+  name = "{{ sensu_shortname }}_cloudinit_disk"
+  pool = "{{ virsh_storage_pool }}"
+  user_data = <<EOF
+#cloud-config
+chpasswd:
+  expire: False
+  list:
+    - root:$6$1/wSovbfjasgn69x$UxUMv3sI.KZQBUzT53LBzKhtzOfIWd9K0MPLUtF1rhxPlXQLH27QPgNjvL1ol7GnxrXHW4sLCerawHIUGqGza1
+
+local-hostname: "{{ sensu_shortname }}"
+disable_root: 0
+ssh_pwauth: 1
+users:
+  - name: root
+runcmd:
+  - sed -i -e 's/^UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config
+  - systemctl restart sshd
+EOF
+network_config = file("sensu_net_config")
+meta_data = <<EOF
+instance-id: "{{ sensu_shortname }}-001"
+local-hostname: "{{ sensu_shortname }}"
+EOF
+}
+
+resource "libvirt_domain" "{{ sensu_shortname }}" {
+  name = "{{ sensu_shortname }}"
+  memory = "8192"
+  vcpu = 2
+  network_interface {
+    bridge= var.ext_bridge
+
+  }
+  cloudinit = libvirt_cloudinit_disk.{{ sensu_shortname }}_cloudinit_disk.id
+  disk {
+   volume_id = libvirt_volume.{{ sensu_shortname }}_vol.id
+  }
+  video {
+    type = "vga"
+  }
+  graphics {
+    type = "vnc"
+    listen_type = "address"
+ }
+}
+
+resource "libvirt_volume" "sensu_base"{
+  name = "{{ infra_images['sensu_img_name'] }}"
+  pool = "{{ virsh_storage_pool }}"
+  format = "qcow2"
+}

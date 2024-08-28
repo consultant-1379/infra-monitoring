@@ -1,0 +1,165 @@
+---
+- include: add_repositories.yaml
+  
+# disable epel repo so that rabbit is installed from bintray repo
+- name: Install required sensu packages
+  yum:
+    name: "{{ item }}"
+    state: present
+    disablerepo: epel
+  loop: [erlang, rabbitmq-server, sensu, uchiwa]
+
+- name: Install the required gems
+  command: /opt/sensu/embedded/bin/gem install sensu-cli sensu-plugins-disk-checks sensu-plugins-memory-checks sensu-plugins-ntp sensu-plugins-cpu-checks sensu-plugins-mailer sensu-plugins-network-checks sensu-plugins-chrony --clear-sources --source '{{gems_var}}'
+
+- block:
+    - name: Install NaviCLI
+      yum:
+        name: 'http://monvm2.athtem.eei.ericsson.se/monitoring_general/NaviCLI-Linux-64-x86-en_US-7.33.9.1.55-1.x86_64.rpm'
+        state: present
+
+    - name: Configure Naviseccli
+      expect:
+        command: /opt/Navisphere/bin/setlevel_cli.sh
+        responses:
+            'Please enter the verifying level\(low|medium|l|m\) to set\?': 'low'
+  when: vnx is defined
+
+- name: Create subscription directory on server
+  file:
+    path: /etc/sensu/conf.d/{{item.0.dir_name}}/{{item.1}}
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+  loop: "{{subscription_directory | subelements('sub_dir')}}"
+
+- name: Create plugins directory on server
+  file:
+    path: /etc/sensu/plugins
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+
+- name: Create mail_config directory on server
+  file:
+    path: /etc/sensu/conf.d/mail_config
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+
+- include: copy_chassis_configs.yaml
+  when: chassis is defined
+
+- include: copy_hpe_configs.yaml
+  when: hpe is defined
+
+- include: copy_vnx_configs.yaml
+  when: vnx is defined
+
+- include: copy_unity_configs.yaml
+  when: unity is defined
+
+- include: copy_idrac_configs.yaml
+  when: idrac is defined
+
+- name: Copy subscription files
+  template:
+    src: subscribe_configs.txt.j2
+    dest: /etc/sensu/conf.d/subscriptions/{{subscription.path}}/{{subscription.file_name}}
+  loop: '{{subscription_vars}}'
+  loop_control:
+    loop_var: subscription
+
+- name: Copy Sensu, Mail template config to server
+  template:
+     src: '{{item.file_name}}'
+     dest: '{{item.path}}'
+     owner: sensu
+     group: sensu
+     mode: '0644'
+  loop: '{{sensu_templates}}'
+
+- name: Copy plugin configurations to server
+  copy:
+     src: plugins/{{plugin}}
+     dest: /etc/sensu/plugins/
+     owner: sensu
+     group: sensu
+     mode: '0755'
+  loop: '{{plugin_configs}}'
+  loop_control:
+    loop_var: plugin
+
+- name: Copy idrac configurations to server
+  copy:
+     src: plugins/idrac-smiv2.mib
+     dest: /usr/share/snmp/mibs/
+     owner: sensu
+     group: sensu
+     mode: '0755'
+
+- name: Copy configurations to server
+  copy:
+     src: '{{item.file_name}}'
+     dest: '{{item.path}}'
+     owner: sensu
+     group: sensu
+     mode: '0644'
+  loop: '{{configs}}'
+
+- name: Copy Redis config to server
+  copy:
+     src: redis.conf
+     dest: /etc
+     owner: redis
+     group: root
+     mode: '0640'
+
+- name: Start required services
+  systemd:
+    name: rabbitmq-server
+    state: started
+    enabled: yes
+
+- rabbitmq_vhost:
+    name: /sensu
+    state: present
+
+- rabbitmq_user:
+    user: sensu
+    password: '{{sensu_shared_passwd}}'
+    permissions:
+      - vhost: /sensu
+        configure_priv: .*
+        read_priv: .*
+        write_priv: .*
+    state: present
+    force: yes
+
+- block:
+    - name: Remove proxy settings from yum.conf
+      ini_file:
+        path: /etc/yum.conf
+        section: main
+        option: "{{item}}"
+        state: absent
+      loop: [http_caching, proxy]
+
+    - name: Remove proxy settings from env
+      ini_file:
+        path: /etc/environment
+        section: ""
+        option: "{{item}}"
+        state: absent
+      loop: ['http_proxy', 'https_proxy', 'no_proxy']
+  when: use_proxy is defined
+
+- name: Start required services
+  systemd:
+    name: '{{ item }}'
+    state: started
+    enabled: yes
+  loop: '{{ services }}'

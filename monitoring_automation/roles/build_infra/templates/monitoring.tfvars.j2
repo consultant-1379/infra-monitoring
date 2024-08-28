@@ -1,0 +1,13 @@
+{% if number_physical_hosts == 1 %}
+# Director host IP
+mon_host = "{{ director_public_ip }}"
+{% elif number_physical_hosts == 2 %}
+# Monitor host IP
+mon_host = "{{ monitor_public_ip }}"
+{% endif %}
+
+# bridge interface for the external/ECN network on the director host e.g. brpub
+ext_bridge = "{{ external_bridge }}"
+
+# bridge interface for the provisioning network on the director host e.g. brprov
+prov_bridge = "{{ provisioning_bridge }}"

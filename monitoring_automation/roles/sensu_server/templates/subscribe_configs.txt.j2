@@ -1,0 +1,11 @@
+{
+  "checks": {
+    "{{subscription.dynamic_var}}": {
+      "command": "{{subscription.command}}",
+      "interval": {{subscription.interval | default(300)}},
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "subscribers":["{{subscription.path}}"]
+         }
+     }
+}

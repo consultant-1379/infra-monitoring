@@ -1,0 +1,125 @@
+{%raw%}---
+- hosts: sensu_vm
+  gather_facts: False
+  become: yes
+  user: centos
+  vars:
+    pkgs: [epel-release, cloud-init, perl-core, dkms, htop, elinks, tree, git-core,
+           zlib-devel, readline-devel, libyaml-devel, libffi-devel, openssl-devel, vnstat,
+           jq, perl-Nagios-Plugin, perl-IO-Socket-SSL, perl-XML-Simple, perl-Net-SNMP, redis,
+           python-pip, net-snmp-utils, '@Development tools', gcc, 'gcc-c++']
+    python_pkgs: [requests, pexpect]
+    disabled_services: [NetworkManager, firewalld]
+    enabled_services: [chronyd, vnstat]
+    
+  tasks:
+    - name: Create resolv.conf
+      copy:
+        content: |
+          nameserver 159.107.173.12
+          nameserver 159.107.173.3
+          search ericsson.se athtem.eei.ericsson.se
+        dest: /etc/resolv.conf
+    {%endraw%}
+    {% if use_proxy is defined %}
+
+    - name: Configure yum.conf to use proxy
+      ini_file:
+        path: /etc/yum.conf
+        section: main
+        option: proxy
+        value: '{{ http_proxy }}'
+    {%raw%}
+    
+    - name: Configure yum.conf to only cache packages
+      ini_file:
+        path: /etc/yum.conf
+        section: main
+        option: http_caching
+        value: packages
+    
+    - name: Add Proxy Settings to environment file
+      ini_file:
+        path: /etc/environment
+        section: ""
+        option: '{{item.0}}'
+        value: '{{item.1}}'
+        no_extra_spaces: yes
+      loop: "{{['http_proxy', 'https_proxy', 'no_proxy'] | zip([{% endraw %}'{{http_proxy}}', '{{http_proxy}}', {%raw%}'127.0.0.1,localhost']) | list}}"
+    
+    - name: Source env file
+      shell: source /etc/environment
+    {%endraw%}
+    {% endif %}
+    {%raw%}
+
+    - name: upgrade all package
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Install required sensu packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ pkgs }}"
+
+    - name: Install pypthon packages for sensu
+      pip:
+        name: '{{item}}'
+      loop: '{{python_pkgs}}'
+      
+    - name: Unarchive monitoring plugin with extra options
+      unarchive:
+        src: "http://10.44.77.158/repo3/monitoring/monitoring-plugins-2.2.tar.gz"
+        dest: "/tmp/"
+        remote_src: yes
+
+    - name: Unarchive nagios plugin with extra options
+      unarchive:
+        src: "http://10.44.77.158/repo3/monitoring/nagios-plugins-2.1.4.tar.gz"
+        dest: "/tmp/"
+        remote_src: yes
+
+    - name: Compile monitoring plugins
+      shell: "cd /tmp/monitoring-plugins-2.2/ ; ./configure ; make ; make install"
+
+    - name: Compile nagios plugins
+      shell: "cd /tmp/nagios-plugins-2.1.4/ ; ./configure ; make ; make install"
+
+    - name:  Download and setup cpanm
+      shell: "cd /tmp/ ; curl -L http://cpanmin.us | perl - --sudo App::cpanminus ; ln -s /usr/local/bin/cpanm /usr/bin/cpanm ; cd ~ ; cpanm Net::SNMP"
+    
+    - name: Start service vnstat
+      service:
+        name: vnstat
+        state: started
+    
+    - name: Enable service vnstat, and not touch the state
+      service:
+        name: vnstat
+        enabled: yes
+    
+    - name:  Update vnstat database
+      shell: "vnstat -u"
+    
+    - name: Make sure services are running
+      systemd:
+        state: started
+        enabled: yes
+        name: "{{ item }}"
+      loop: "{{ enabled_services }}"
+    
+    - name: Make sure services are stopped
+      systemd:
+        state: stopped
+        enabled: no
+        name: "{{ item }}"
+      loop: "{{ disabled_services }}"
+    
+    - name: Remove eth0 file
+      file:
+        path: "/etc/sysconfig/network-scripts/ifcfg-eth0"
+        state: absent
+    {%endraw%}
+

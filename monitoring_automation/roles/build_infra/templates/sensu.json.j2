@@ -1,0 +1,47 @@
+{%raw%}{
+    "variables": {
+      "centos_password": {%endraw%}"{{ centosadm_password }}"{%raw%}
+    },
+
+    "builders": [
+      {
+        "vm_name": {%endraw%}"{{ infra_images['sensu_img_name'] }}"{%raw%},
+        "qemu_binary": "qemu-kvm",
+        "disk_size": "40G",
+        "net_device": "virtio-net",
+        "net_bridge": {%endraw%}"{{ external_bridge }}"{%raw%},
+
+        "iso_urls": [
+          "http://{%endraw%}{{ repo_ip_address }}/{{ repo_folder }}/{{ packer_base_img }}{%raw%}"
+        ],
+        "iso_checksum": "sha256:9bba3da2876cb9fcf6c28fb636bcbd01832fe6d84cd7445fa58e44e569b3b4fe",
+        "iso_target_path": "iso",
+        "output_directory": "output_sensu",
+        "ssh_host": {%endraw%}"{{ sensu_public_ip_cidr|ipaddr('address') }}"{%raw%},
+        "ssh_username": "centos",
+        "ssh_password": "{{ user `centos_password` }}",
+        "ssh_wait_timeout": "20m",
+
+        "http_directory": "http",
+        "boot_command": [
+          "<tab> text ip={%endraw%}{{ sensu_public_ip_cidr|ipaddr('address') }}::{{ sensu_public_ip_cidr | ipaddr(1) | ipv4('address') }}:{{ sensu_public_ip_cidr | ipaddr('netmask') }}{%raw%}:ieatpackersensu:eth0:none ks=http://{{.HTTPIP}}:{{.HTTPPort}}/sensu-ks.cfg<enter><wait>"
+        ],
+        "boot_wait": "2s",
+        "shutdown_command": "echo '{{ user `centos_password` }}' | sudo -S shutdown -P now",
+        "type": "qemu",
+        "headless": false,
+        "display": "none",
+        "memory": "8192",
+        "cpus": 2
+      }
+    ],
+    "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "./sensu.yaml",
+      "user": "centos",
+      "host_alias": "sensu_vm",
+      "ansible_env_vars": ["ANSIBLE_LOG_PATH=/tmp/sensu_ansible.log", "ANSIBLE_DISPLAY_ARGS_TO_STDOUT=True"]
+    }
+    ]
+  }{%endraw%}

@@ -1,0 +1,192 @@
+---
+- block:
+    - set_fact:
+        vm: "{{groups.monitorhost[0]}}"
+      
+    - include: set_proxy.yaml
+  when: http_proxy is defined
+
+- name: Add ansible repo
+  yum_repository:
+    name: rhel-7-server-ansible-2.9-rpms-latest
+    description: ansible 2.9
+    file: ansible
+    baseurl: http://10.44.77.158/repo2/rhospall_latest/rhel-7-server-ansible-2.9-rpms
+    gpgcheck: no
+
+- name: Install ansible
+  yum:
+    name: ansible
+    state: present
+
+- name: Configure Hashicorp Repo required for Terraform & Packer
+  shell: "yum install -y yum-utils; yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo"
+
+- name: Find Path for Virsh Pool where monitor VMs will be deployed
+  shell: "grep path /etc/libvirt/storage/{{ virsh_storage_pool }}.xml | awk -F '[><]' '{ print $3 }'"
+  register: monitor_dir
+
+- block:
+    - name: Install required packer packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packer_pkgs }}"
+
+    - name: Remove cracklib-packer symbolic link
+      file:
+        path: "/usr/sbin/packer"
+        state: absent
+
+    - name: Set bridge configuration to allow all
+      lineinfile:
+        path: /etc/qemu-kvm/bridge.conf
+        regexp: 'allow*'
+        line: 'allow all'
+
+    - name: Update PATH environment variable to include path to qemu
+      lineinfile:
+        path: ~/.bash_profile
+        regexp: '^PATH'
+        line: 'PATH=$PATH:$HOME/bin:/usr/libexec'
+
+    - name: Add Packer log to environment variable
+      lineinfile:
+        path: ~/.bash_profile
+        state: present
+        insertafter: EOF
+        line: export PACKER_LOG=1
+
+    - name: Remove packer_cache directory
+      file:
+        state: absent
+        path: "{{ monitor_dir.stdout }}/packer_cache"
+    
+    - name: "Create {{cloudname}} packer directory and http subdirectory"
+      file:
+        path: "{{ monitor_dir.stdout }}/packer/http"
+        state: directory
+        mode: 0755
+  when: sensu_image is defined and sensu_image == 'new' or logstash_image is defined and logstash_image  == 'new'
+
+- include: new_sensu.yaml
+  when: sensu_image is defined and sensu_image == 'new'
+
+- include: new_logstash.yaml
+  when: logstash_image is defined and logstash_image  == 'new'
+
+- name: Install required terraform packages
+  vars:
+    pkgs:
+      - terraform
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ pkgs }}"
+
+- name: Create a terraform plugin directory if it does not exist
+  file:
+    path: ~/.local/share/terraform/plugins/registry.terraform.io/dmacvicar/libvirt/0.6.2/linux_amd64
+    state: directory
+    mode: '0744'
+
+- name: Unarchive terraform libvirt plugin
+  unarchive:
+    src: "https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v0.6.2/terraform-provider-libvirt-0.6.2+git.1585292411.8cbe9ad0.Fedora_28.x86_64.tar.gz"
+    dest: "~/.local/share/terraform/plugins/registry.terraform.io/dmacvicar/libvirt/0.6.2/linux_amd64"
+    remote_src: yes
+
+- name: "Create terraform subdirectory"
+  file:
+    state: directory
+    path:  "{{ monitor_dir.stdout }}/terraform"
+    mode: 0755
+
+- name: Copy Monitoring VM terraform files from templates to Physical Host
+  template:
+    src: '{{ tf_template }}'
+    dest: "{{ monitor_dir.stdout }}/terraform/{{ tf_template | regex_replace('.j2','') }}"
+  loop: [sensu.tf.j2, sensu_net_config.j2, logstash.tf.j2, logstash_net_config.j2, prometheus.tf.j2,
+         prometheus_net_config.j2, monitoring.tfvars.j2, monitoring.tf.j2]
+  loop_control:
+    loop_var: tf_template
+    label: "{{ tf_template }}"
+
+- name: Download Sensu Image from Central Repo Server
+  get_url:
+    url: "http://{{ repo_ip_address }}/{{ repo_folder }}/{{ infra_images['sensu_img_name'] }}"
+    dest: "{{ monitor_dir.stdout }}"
+  when: ( sensu_image is defined and sensu_image == 'reuse' )
+
+- name: Download Logstash Image from Central Repo Server
+  get_url:
+    url: "http://{{ repo_ip_address }}/{{ repo_folder }}/{{ infra_images['logstash_img_name'] }}"
+    dest: "{{ monitor_dir.stdout }}"
+  when: ( logstash_image is defined and logstash_image  == 'reuse' )
+
+- name: Download Prometheus Image from Central Repo Server
+  get_url:
+    url: "http://{{ repo_ip_address }}/{{ repo_folder }}/{{ infra_images['prometheus_img_name'] }}"
+    dest: "{{ monitor_dir.stdout }}"
+
+- name: Deploy VMs from Images
+  terraform:
+    project_path: "{{ monitor_dir.stdout }}/terraform"
+    state: present
+    force_init: true
+    variables_file: "{{ monitor_dir.stdout }}/terraform/monitoring.tfvars"
+
+- name: Make sure services are stopped
+  systemd:
+    state: stopped
+    enabled: no
+    name: "{{ item }}"
+  loop: "{{ disabled_services }}"
+
+- name: Wait for Monitoring VMs to start
+  wait_for:
+    port: 22
+    host: "{{ item }}"
+    search_regex: OpenSSH
+    delay: 5
+    timeout: 180
+  connection: local
+  loop: 
+    - "{{ sensu_shortname }}"
+    - "{{ prometheus_shortname }}"
+    - "{{ logstash_shortname }}"
+
+- name: SSH-Copy-ID to Sensu VM
+  shell: "sshpass -e ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ item }}"
+  environment: 
+    SSHPASS: "{{ mon_root_password }}"
+  delegate_to: localhost
+  loop: "{{groups.infra_ssh}}"
+
+- block:
+    - set_fact:
+        vm: "{{ groups.elk[0] }}"
+    
+    - include: set_proxy.yaml
+  when: use_proxy is defined
+
+- name: Update yum packages on Sensu VM if re-using existing image
+  yum:
+    name: '*'
+    state: latest
+  delegate_to: "{{ groups.sensu_masters[0] }}"
+  when: sensu_image is defined and sensu_image == 'reuse'
+
+- name: Update yum packages on Logstash VM if re-using existing image
+  yum:
+    name: '*'
+    state: latest
+  delegate_to: "{{ groups.elk[0] }}"
+  when: logstash_image is defined and logstash_image == 'reuse'
+
+- name: Update yum packages on Prometheus VM
+  yum:
+    name: '*'
+    state: latest
+  delegate_to: "{{groups.prometheus[0]}}"
+  

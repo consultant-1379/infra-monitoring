@@ -1,0 +1,238 @@
+{%raw%}---
+- hosts: localhost
+  roles:
+    - common_settings
+  vars:    
+    #below is a key value pair.....if each parameter has a dash infra_hostnames is treated as a list{%endraw%}
+
+    infra_hostnames:
+    {%raw%}
+      director_physical_hostname: "{{ lookup('dig',director_public_ip + '/PTR','@' + dns_servers|first)[:-1] }}"
+      director_vm_hostname: "{{ lookup('dig',director_vm_public_ip_cidr|ipaddr('address') + '/PTR','@' + dns_servers|first)[:-1] }}"{%endraw%}
+    {% if number_of_dl_servers == '2' %}
+    {%raw%}
+      monitor_physical_hostname: "{{ lookup('dig',monitor_public_ip + '/PTR','@' + dns_servers|first)[:-1] }}"
+    {%endraw%}
+    {% endif %}
+
+    overcloud_hostnames:
+      {%raw%}controller_nodes: "{{ cloudname }}-controller-[0:{{ controller_count - 1 }}]"
+      compute_std_nodes: "{{ cloudname }}-compute-std-[0:{{compute_std_count -1 }}]"
+      compute_hp_nodes: "{{ cloudname }}-compute-hp-[0:{{compute_hp_count -1 }}]"{%endraw%}
+
+  tasks:
+    {%raw%}
+    - name: Add director physical hostname to in-memory inventory
+      add_host:
+        hostname: "{{ infra_hostnames['director_physical_hostname'] }}"
+        groups:
+          - elk_client
+          - directorhost
+
+    - name: Add director vm hostname to in-memory inventory
+      add_host:
+        hostname: "{{ infra_hostnames['director_vm_hostname'] }}"
+        groups:
+          - elk_client
+          - director_vm
+
+    - name: Save director physical hostname to directorhost section in inventory file
+      lineinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: directorhost
+        line: "{{ infra_hostnames['director_physical_hostname'] }}"
+
+    - name: Save director vm hostname to director_vm section in inventory file
+      lineinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: director_vm
+        line: "{{ infra_hostnames['director_vm_hostname'] }}"
+
+    - name: Add overcloud controller nodes hostname to in-memory inventory
+      add_host:
+        hostname: "{{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin"
+        groups:
+          - elk_client
+          - controller
+
+    - name: Add overcloud Standard (std) compute nodes hostname to in-memory inventory
+      add_host:
+        hostname: "{{ overcloud_hostnames['compute_std_nodes'] }} ansible_user=heat-admin"
+        groups:
+          - elk_client
+          - compute
+      when: compute_std_count != 0
+
+    - name: Add overcloud High Performance (hp) compute nodes hostname to in-memory inventory
+      add_host:
+        hostname: "{{ overcloud_hostnames['compute_hp_nodes'] }} ansible_user=heat-admin"
+        groups:
+          - elk_client
+          - compute
+      when: compute_hp_count != 0
+
+    - name: Save overcloud controller node hostnames to controller section in inventory file
+      lineinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: controller
+        line: "{{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin"
+      when: controller_count != 0
+
+    - name: Save overcloud standard (std) compute node hostnames to compute section in inventory file
+      lineinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: compute
+        line: "{{ overcloud_hostnames['compute_std_nodes'] }} ansible_user=heat-admin"
+      when: compute_std_count != 0
+
+    - name: Save overcloud high performance (hp) compute node hostnames to compute section in inventory file
+      lineinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: compute
+        line: "{{ overcloud_hostnames['compute_hp_nodes'] }} ansible_user=heat-admin"
+      when: compute_hp_count != 0{%endraw%}
+
+    {% if number_of_dl_servers == '2' %}
+
+    - name: Add monitor physical hostname to in-memory inventory
+      add_host:
+        {%raw%}hostname: "{{ infra_hostnames['monitor_physical_hostname'] }}"{%endraw%}
+
+        groups:
+          - elk_client
+          - monitorhost
+
+    - name: Save monitor physical hostname to monitorhost section in inventory file
+      lineinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: monitorhost
+        {%raw%}line: "{{ infra_hostnames['monitor_physical_hostname'] }}"{%endraw%}
+
+
+    - name: Save all infra and overcloud hostnames to elk_client section in inventory file
+      blockinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: elk_client
+        {%raw%}block: |
+          {{ infra_hostnames['monitor_physical_hostname'] }}
+          {{ infra_hostnames['director_physical_hostname'] }}
+          {{ infra_hostnames['director_vm_hostname'] }}
+          {{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_std_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_hp_nodes'] }} ansible_user=heat-admin
+      when: ( compute_std_count != 0 and compute_hp_count != 0 ){%endraw%}
+        
+    - name: Save all infra and overcloud (ctrl and std) hostnames to elk_client section in inventory file
+      blockinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: elk_client
+        {%raw%}block: |
+          {{ infra_hostnames['monitor_physical_hostname'] }}
+          {{ infra_hostnames['director_physical_hostname'] }}
+          {{ infra_hostnames['director_vm_hostname'] }}
+          {{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_std_nodes'] }} ansible_user=heat-admin
+      when: ( compute_std_count != 0 and compute_hp_count == 0 ){%endraw%}
+
+
+    - name: Save all infra and overcloud (ctrl and hp) hostnames to elk_client section in inventory file
+      blockinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: elk_client
+        {%raw%}block: |
+          {{ infra_hostnames['monitor_physical_hostname'] }}
+          {{ infra_hostnames['director_physical_hostname'] }}
+          {{ infra_hostnames['director_vm_hostname'] }}
+          {{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_hp_nodes'] }} ansible_user=heat-admin
+      when: ( compute_std_count == 0 and compute_hp_count != 0 ){%endraw%}
+
+    {% else %}
+
+    - name: Save all infra (director phost and vm) and overcloud hostnames to elk_client section in inventory file
+      blockinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: elk_client
+        {%raw%}block: |
+          {{ infra_hostnames['director_physical_hostname'] }}
+          {{ infra_hostnames['director_vm_hostname'] }}
+          {{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_std_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_hp_nodes'] }} ansible_user=heat-admin
+      when: ( compute_std_count != 0 and compute_hp_count != 0 ){%endraw%}
+
+
+    - name: Save all infra (director phost and vm) and overcloud (ctrl and std) hostnames to elk_client section in inventory file
+      blockinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: elk_client
+        {%raw%}block: |
+          {{ infra_hostnames['director_physical_hostname'] }}
+          {{ infra_hostnames['director_vm_hostname'] }}
+          {{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_std_nodes'] }} ansible_user=heat-admin
+      when: ( compute_std_count != 0 and compute_hp_count == 0 ){%endraw%}
+
+
+    - name: Save all infra (director phost and vm) and overcloud (ctrl and hp) hostnames to elk_client section in inventory file
+      blockinfile:
+        path: "{{ cloud_dir }}/{{ cloudname }}_inventory.yml"
+        insertafter: elk_client
+        {%raw%}block: |
+          {{ infra_hostnames['director_physical_hostname'] }}
+          {{ infra_hostnames['director_vm_hostname'] }}
+          {{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin
+          {{ overcloud_hostnames['compute_hp_nodes'] }} ansible_user=heat-admin
+      when: ( compute_std_count == 0 and compute_hp_count != 0 ){%endraw%}
+
+    {% endif %}
+    {% if number_of_dl_servers == '2' %}
+    {% raw %}
+    - name: SSH-Copy-ID to monitor host
+      shell: "sshpass -e ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ groups.monitorhost[0] }}"
+      environment: 
+        SSHPASS: "{{ mon_host_password }}" {% endraw %}
+    {% endif %}
+    {% raw %}
+    - name: Add overcloud controller nodes hostname to in-memory inventory
+      add_host:
+        hostname: "{{ overcloud_hostnames['controller_nodes'] }} ansible_user=heat-admin"
+        groups:
+          - elk_client:vars
+
+    - name: SSH-Copy-ID to director host
+      shell: "sshpass -e ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ groups.directorhost[0]}}"
+      environment: 
+        SSHPASS: "{{ director_host_password }}"
+    
+    - name: SSH-Copy-ID to director vm
+      shell: "sshpass -e ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no stack@{{ groups.director_vm[0] }}"
+      environment: 
+        SSHPASS: "{{ director_vm }}"
+
+    # refreshes in-memory inventory as the inventory file will not be read again by the playbook
+    - meta: refresh_inventory
+    {%endraw%}
+
+{% if number_of_dl_servers == '2' %}
+- hosts: monitorhost
+{% else %}
+- hosts: directorhost
+{% endif %}
+  roles:
+    - common_settings
+    - role: build_infra
+      tags:
+        - deploy_monitor_vms
+    - role: upload_images
+      tags:
+        - upload_packer_images
+  user: root
+
+- hosts: sensu_masters
+  roles:
+    - common_settings
+    - role: sensu_server
+      tags:
+        - sensu_server_deploy
+  user: root

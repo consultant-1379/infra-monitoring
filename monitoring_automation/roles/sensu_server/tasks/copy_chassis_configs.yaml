@@ -1,0 +1,54 @@
+---
+- set_fact:
+    temp_var: chassis_health
+
+- name: Create chassis directory
+  file:
+    path: /etc/sensu/conf.d/standalone/chassis/{{item.name.split('-')[1]}}
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+  loop: "{{chassis}}"
+
+- name: Copy health check templates server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/chassis/{{chassis_id.0.name.split('-')[1]}}/{{chassis_id.0.name}}_oa{{1 if index | int is divisibleby 2 else 2}}_health.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{chassis | subelements('oa')}}"
+  loop_control:
+    loop_var: chassis_id
+    index_var: index
+ 
+- set_fact:
+    temp_var: chassis_ping
+
+- name: Copy ping templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/chassis/{{chassis_id.0.name.split('-')[1]}}/{{chassis_id.0.name}}_oa{{1 if index | int is divisibleby 2 else 2}}_ping.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{chassis | subelements('oa')}}"
+  loop_control:
+    loop_var: chassis_id
+    index_var: index 
+
+- set_fact:
+    temp_var: chassis_vc
+
+- name: Copy VCs templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/chassis/{{chassis_id.0.name.split('-')[1]}}/{{chassis_id.0.name}}_vc1_x{{3 if index | int is divisibleby 2 else 2}}.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{chassis | subelements('vc')}}"
+  loop_control:
+    loop_var: chassis_id
+    index_var: index 

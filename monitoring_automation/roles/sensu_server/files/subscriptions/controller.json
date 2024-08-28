@@ -1,0 +1,81 @@
+{
+  "checks": {
+    "pacemaker_status_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/usr/bin/sudo /usr/sbin/crm_mon -s",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_keystone_admin_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p keystone-admin -m 3 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_keystone_main_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p keystone-main -m 3 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_nova_api_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p nova-api -m 1 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_glance_api_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p glance-api -m 1 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_nova_conductor_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p nova-conductor -m 1 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_nova_consoleauth_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p nova-consoleauth -m 1 -M 1",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_nova_novncproxy_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p nova-novncproxy -m 1 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_neutron-server_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p neutron-server -m 1 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_neutron-openvswitch-agent_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p neutron-openvswitch-agent -m 1 -M 1",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    },
+    "proc_neutron-metadata-agent_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins//check_procs.sh -p neutron-metadata-agent -m 1 -M 100",
+      "interval": 60,
+      "subscribers":["osk_controller"]
+    }
+  }
+}

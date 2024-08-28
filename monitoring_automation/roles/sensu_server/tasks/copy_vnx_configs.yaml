@@ -1,0 +1,37 @@
+---
+- name: Create vnx directory
+  file:
+    path: /etc/sensu/conf.d/standalone/vnx/{{vnx.name | regex_search('[0-9]+')}}
+    state: directory
+    owner: sensu
+    group: sensu
+    mode: '0755'
+ 
+- set_fact:
+    temp_var: vnx
+
+- name: Copy vnx templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/vnx/{{vnx.name | regex_search('[0-9]+')}}/{{vnx.name}}_{{vnx_var}}.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: [cache, disk, faults, spinfo]
+  loop_control:
+    loop_var: vnx_var
+
+- set_fact:
+    temp_var: vnx_a_b
+
+- name: Copy vnx sm templates to server
+  template:
+    src: standalone.json.j2
+    dest: /etc/sensu/conf.d/standalone/vnx/{{vnx.name | regex_search('[0-9]+')}}/{{vnx.name}}_{{'spa' if index | int is divisibleby 2 else 'spb'}}.json
+    owner: sensu
+    group: sensu
+    mode: '0644'
+  loop: "{{vnx.vnx_ip | zip([ '--SP A', '--SP B']) | list}}"
+  loop_control:
+    loop_var: vnx_var
+    index_var: index

@@ -1,0 +1,152 @@
+---
+support_email: PDLDEOPENS@pdl.internal.ericsson.com
+admin_mail: finbar.ryan@ericsson.com
+# Monitoring config
+dashboard: "http://{{cloudname}}-sensu.athtem.eei.ericsson.se:3000/#/clients"  # <--  Sensu Dashboard
+# Repo Server Information
+
+# Repo Server IP where monitoring images are stored
+repo_ip_address: 
+
+# Repo web folder where monitoring images are stored. E.g. repo3/monitoring
+repo_folder: 
+
+# Full repo path where monitoring images are stored. E.g. /var/www/html/repo3/monitoring
+full_repo_path: 
+
+# ISO image to be used when building new images via packer E.g. CentOS-7-x86_64-DVD-1908.iso
+packer_base_img: 
+{% set proxy = True if external_network_type|upper == 'GGN' else False %}
+{% if proxy %}
+# Proxy configuration
+use_proxy: True
+http_proxy: http://atproxy2.athtem.eei.ericsson.se:3128
+{% endif %}
+
+{% if cloud_type == 'OpenStack' %}
+# For OpenStack Cloud type
+
+# If Director and Monitoring VMs are colocated, enter director host IP
+director_public_ip: 
+
+{% if number_of_dl_servers == '2' %}
+# If Director and Monitoring VMs will be deployed on separate server, enter monitoring host IP
+monitor_public_ip: 
+{% endif %}
+
+# Enter IP and Subnet assigned to director VM Eg. 10.10.10.10/25
+director_vm_public_ip_cidr: 
+
+# Enter name of the bridge used for ECN traffic Eg. brpub3a
+external_bridge: 
+
+# Enter name of the bridge used for Provisioning traffic Eg. brprov3a
+provisioning_bridge: 
+
+virsh_storage_pool: {{ virsh_storage_pool_image }}
+
+# Enter number of controller nodes in cloud deployment
+controller_count: 
+
+# Enter number of standard compute nodes in cloud deployment
+compute_std_count: 
+
+# Enter number of high performance compute nodes in cloud deployment
+compute_hp_count:
+
+##  Check in monotoring playbooks if this code is needed  ##
+##  Confirm settings on cloud  ##
+##  Keystonerc  ##
+#proxy_1: "cloud10a.athtem.eei.ericsson.se"
+#proxy_2: "cloud10a.athtem.eei.ericsson.se"
+#url_1: "https://cloud10a.athtem.eei.ericsson.se:13000//v3"
+#pass_1: "xavTEUfbgCgaKwVsV3kkkftKt"
+
+{% endif %}
+
+# Enter IP and Subnet assigned to logstash VM Eg. 10.10.10.10/25
+logstash_public_ip_cidr: 
+
+# Enter IP and Subnet assigned to sensu VM Eg. 10.10.10.10/25
+sensu_public_ip_cidr: 
+
+# Enter IP and Subnet assigned to prometheus VM  Eg. 10.10.10.10/25
+prometheus_public_ip_cidr: 
+
+cloudname: {{ cloudname }}
+
+number_physical_hosts: {{ number_of_dl_servers }}
+
+sensu_image: {{ new_sensu_image }}
+
+logstash_image: {{ new_logstash_image }}
+
+{% if hw_type == 'hpe' %}
+
+#  HPE Chassis variables  #
+chassis:
+{% for num_chassis in range(number_of_chassis|int) %}
+  - name: "eg: ieatc7000-110"
+    oa:
+    - "oa1 ip address"
+    - "oa2 ip address"
+    vc:
+    - "vc1 ip address"
+    - "vc2 ip address"
+{%endfor%}
+#  HPE DL variables  #
+hpe:
+{% for num_dl in range(number_of_dl_servers|int) %}
+  - name: "eg: ieatrcx7439" 
+    dlx_ip:
+    - "ip address" 
+{% endfor -%}
+
+{% else %}
+
+#  IDRAC variables  #
+idrac:
+  - name: "director name"
+    idrac_ip: "director ip"
+{% for num_dell in range(number_of_dell_servers|int) -%}
+  - name: "eg: CL12a_ctrl1_idrac "
+    idrac_ip: "ip address"
+{% endfor -%}
+
+{% endif %}
+
+{% if storage_type == 'vnx' %}
+#  VNX variables  #
+vnx: 
+  name: "eg: ieatvnx-164"
+  vnx_ip: 
+  - " sp a ip "
+  - " sp b ip"
+  vnx_user: {{ san_user }}
+  vnx_pass: "{% raw %}{{san_password}}{% endraw %}"
+
+{% elif storage_type == 'unity' %}
+#  Unity variables  #
+unity:
+  name: "eg: ieatunity-00" 
+  unity_ip: "ip address"
+  unity_user: {{ san_user }}
+  unity_pass: "{% raw %}{{san_password}}{% endraw %}"
+
+{% elif storage_type == '3par' %}
+#  3PAR variables  #
+3par: 
+3par_ip: 
+3par_user: 
+3par_pass: "{% raw %}{{san_password}}{% endraw %}"
+3par_support_mail: "{{ support_email }}"
+
+{% elif storage_type == 'ceph' %}
+#  CEPH variables  #
+ceph: 
+ceph_ip: 
+ceph_user: 
+ceph_pass: "{% raw %}{{san_password}}{% endraw %}"
+ceph_support_mail: "{{ support_email }}"
+
+{% endif %}

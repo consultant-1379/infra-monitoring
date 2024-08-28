@@ -1,0 +1,70 @@
+---
+gems_var: http://ieatmonitvm1.athtem.eei.ericsson.se:8808
+
+subscription_directory: 
+  - {dir_name: 'subscriptions', sub_dir: [director, directorhost, elkstack, monhost, osk_compute, osk_controller, sensu_master]}
+
+sensu_templates:
+  - {file_name: 'client.json.j2', path: '/etc/sensu/conf.d/client.json'}
+  - {file_name: 'api.json.j2', path: '/etc/sensu/conf.d/api.json'}
+  - {file_name: 'redis.json.j2', path: '/etc/sensu/conf.d/redis.json'}
+  - {file_name: 'rabbitmq.json.j2', path: '/etc/sensu/conf.d/rabbitmq.json'}
+  - {file_name: 'uchiwa.json.j2', path: '/etc/sensu/uchiwa.json'}
+  - {file_name: 'html_template.erb.j2', path: '/etc/sensu/conf.d/mail_config/html_template.erb'}
+  - {file_name: 'mail_handler.json.j2', path: '/etc/sensu/conf.d/mail_config/mail_handler.json'}
+  - {file_name: 'support.json.j2', path: '/etc/sensu/conf.d/mail_config/support.json'}
+
+services: [sensu-server, sensu-client, sensu-api, rabbitmq-server]
+
+configs:
+  - {file_name: 'transport.json', path: '/etc/sensu/conf.d'}
+  - {file_name: 'mail_config', path: '/etc/sensu/conf.d'}
+  - {file_name: 'subscriptions/controller.json', path: '/etc/sensu/conf.d/subscriptions/osk_controller'}
+  - {file_name: 'subscriptions/openstack_api.json', path: '/etc/sensu/conf.d/subscriptions/osk_controller'}
+  - {file_name: 'subscriptions/filters.json', path: '/etc/sensu/conf.d/subscriptions/sensu_master'}
+  - {file_name: 'subscriptions/sensu_plugin.json', path: '/etc/sensu/conf.d/subscriptions/sensu_master'}
+
+subscription_vars:
+  - {file_name: 'check_cpu.json', path: 'director', dynamic_var: 'CPU_Director', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'director', dynamic_var: 'Disk_Usage_Director', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'director', dynamic_var: 'Memory_Director', command: '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_ntp.json', path: 'director', dynamic_var: 'NTP_Director', command: '/opt/sensu/embedded/bin/check-ntp.rb -w :::ntp.warn|50::: -c :::ntp.crit|100:::'}
+  
+  - {file_name: 'check_cpu.json', path: 'directorhost', dynamic_var: 'CPU_directorhost', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'directorhost', dynamic_var: 'Disk_Usage_directorhost', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'directorhost', dynamic_var: 'Memory_directorhost', command: '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_chrony.json', path: 'directorhost', dynamic_var: 'chrony_directorhost', command: '/opt/sensu/embedded/bin/check-chrony.rb --warn-offset 2000 --crit-offset 3000', interval: '600'}
+  
+  - {file_name: 'check_cpu.json', path: 'elkstack', dynamic_var: 'CPU_elk', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'elkstack', dynamic_var: 'Disk_Usage_elk', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'elkstack', dynamic_var: 'Memory_elk', command: '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_chrony.json', path: 'elkstack', dynamic_var: 'chrony_elk', command: '/opt/sensu/embedded/bin/check-chrony.rb --warn-offset 2000 --crit-offset 3000', interval: '600'}
+  - {file_name: 'check_systemd_elasticsearch.json', path: 'elkstack', dynamic_var: 'Elasticsearch_elk', command: '/opt/sensu/embedded/bin/check-systemd.rb -s elasticsearch.service'}
+  - {file_name: 'check_systemd_kibana.json', path: 'elkstack', dynamic_var: 'Kibana_elk', command: '/opt/sensu/embedded/bin/check-systemd.rb -s kibana.service'}
+  - {file_name: 'check_systemd_logstash.json', path: 'elkstack', dynamic_var: 'Logstash_elk', command: '/opt/sensu/embedded/bin/check-systemd.rb -s logstash.service'}
+  - {file_name: 'check_systemd_nginx.json', path: 'elkstack', dynamic_var: 'Nginx_elk', command: '/opt/sensu/embedded/bin/check-systemd.rb -s nginx.service'}
+
+  - {file_name: 'check_cpu.json', path: 'monhost', dynamic_var: 'CPU_monhost', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'monhost', dynamic_var: 'Disk_Usage_monhost', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'monhost', dynamic_var: 'Memory_monhost', command: '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_chrony.json', path: 'monhost', dynamic_var: 'chrony_monhost', command: '/opt/sensu/embedded/bin/check-chrony.rb --warn-offset 2000 --crit-offset 3000', interval: '600'}
+  
+  - {file_name: 'check_cpu.json', path: 'osk_compute', dynamic_var: 'CPU_compute', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'osk_compute', dynamic_var: 'Disk_Usage_compute', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'osk_compute', dynamic_var: 'Memory_compute', command: '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_ntp.json', path: 'osk_compute', dynamic_var: 'NTP_compute', command: '/opt/sensu/embedded/bin/check-ntp.rb -w :::ntp.warn|50::: -c :::ntp.crit|100:::'}
+  - {file_name: 'check_systemd_ssh.json', path: 'osk_compute', dynamic_var: 'sshd_service_compute', command: '/opt/sensu/embedded/bin/check-systemd.rb -s sshd.service'}
+  
+  - {file_name: 'check_cpu.json', path: 'osk_controller', dynamic_var: 'CPU_controller', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'osk_controller', dynamic_var: 'Disk_Uscontrollerage_controller', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'osk_controller', dynamic_var: 'Memory_controller', 'command': '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_ntp.json', path: 'osk_controller', dynamic_var: 'NTP_controller', 'command': '/opt/sensu/embedded/bin/check-ntp.rb -w :::ntp.warn|50::: -c :::ntp.crit|100:::'}
+  - {file_name: 'check_systemd_ssh.json', path: 'osk_controller', dynamic_var: 'sshd_service_controller', command: '/opt/sensu/embedded/bin/check-systemd.rb -s sshd.service'}
+
+  - {file_name: 'check_cpu.json', path: 'sensu_master', dynamic_var: 'CPU_sensu', command: '/opt/sensu/embedded/bin/check-cpu.rb -w :::cpu.warning|85::: -c :::cpu.critical|95:::'}
+  - {file_name: 'check_disk.json', path: 'sensu_master', dynamic_var: 'Disk_Usage_sensu', command: '/opt/sensu/embedded/bin/check-disk-usage.rb -p "(\/var|\/run|\/sys|\/root|\/snap)"'}
+  - {file_name: 'check_memory.json', path: 'sensu_master', dynamic_var: 'Memory_sensu', command: '/opt/sensu/embedded/bin/check-memory-percent.rb -w :::memory.warning|80::: -c :::memory.critical|90:::'}
+  - {file_name: 'check_chrony.json', path: 'sensu_master', dynamic_var: 'chrony_sensu', command: '/opt/sensu/embedded/bin/check-chrony.rb --warn-offset 2000 --crit-offset 3000', interval: '600'}
+
+plugin_configs: [check_hp_bladechassis.pl, check_snmp_hpvc.pl, check_emc_clariion_vnx.pl, check_ilo2_health.pl,
+                  check_idrac_cpu.sh, check_idrac_disk.sh, check_idrac_memory.sh, check_unity2.py, idrac_2.2rc4]

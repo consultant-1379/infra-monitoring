@@ -1,0 +1,53 @@
+---
+- name: "Check if {{cloudname}} branch already exists"
+  shell: "git branch | grep -q {{cloudname}}"
+  register: branch_exists
+  ignore_errors: yes
+
+- name: "Create new branch {{cloudname}}"
+  shell: "git branch {{cloudname}}"
+  when: branch_exists.rc !=0
+
+- name: "Checkout the {{cloudname}} branch"
+  shell: "git checkout {{cloudname}}"
+
+- name: Set variables
+  set_fact:
+    ipv4: '{{network_type == "4"}}'
+    ipv6: '{{network_type == "6"}}'
+    dual_stack: '{{network_type == "dual"}}'
+    cloud_dir: "{{topdir}}/{{cloud_type}}/{{cloudname}}"
+    inventory_file: "{{cloudname}}_inventory.yml"
+
+- name: "Create {{cloudname}} directory"
+  file:
+    state: directory
+    path:  "{{ cloud_dir }}"
+    mode: 0755
+
+- name: Create inventory file
+  template:
+    src: inventory.yml.j2
+    dest: "{{ cloud_dir }}/{{ inventory_file }}"
+
+- name: "Create {{cloudname}}.yml variables"
+  template:
+    src: cloud_vars.yml.j2
+    dest: "{{ cloud_dir }}/{{ cloudname }}_monitoring.yml"
+    mode: 0755
+
+- name: "Create deploy script"
+  template:
+    src: start_deploy.sh.j2
+    dest: "{{ cloud_dir }}/start_deploy.sh"
+    mode: 0755
+
+- name: "Create passwords.yml"
+  template:
+    src: passwords.yml.j2
+    dest: "{{ cloud_dir }}/passwords.yml"
+
+- name: "Create buildmonitoring.yml"
+  template:
+    src: buildmonitoring.yml.j2
+    dest: "{{ monitor_dir }}/buildmonitoring.yml"

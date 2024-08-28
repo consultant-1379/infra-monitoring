@@ -1,0 +1,31 @@
+---
+# Save Images to repo server
+- name: Mount NFS share from Repo Server
+  mount:
+    fstype: nfs
+    opts: rw,sync,hard,intr
+    src: "{{ repo_ip_address }}:{{full_repo_path}}"
+    state: mounted
+    path: /monitoring_repo_srv
+
+- name: Copy images to NFS share on Repo Server, backup existing images
+  copy:
+    src: "{{ item }}"
+    dest: /monitoring_repo_srv
+    remote_src: yes
+    backup: yes
+  loop:
+    - "{{ monitor_dir.stdout }}/file1.txt"
+    - "{{ monitor_dir.stdout }}/file2.txt"
+#     - "{{ monitor_dir.stdout }}/{{ infra_images['logstash_img_name'] }}"
+#     - "{{ monitor_dir.stdout }}/{{ infra_images['sensu_img_name'] }}"
+
+- name: Unmount NFS share from Repo Server
+  mount:
+    path: /monitoring_repo_srv
+    state: unmounted
+
+- name: Remove Directory for repo server mountpoint
+  file:
+    state: absent
+    path: /monitoring_repo_srv

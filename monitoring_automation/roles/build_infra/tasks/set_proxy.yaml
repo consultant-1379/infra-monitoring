@@ -1,0 +1,30 @@
+---
+- name: Check if Proxy Settings exist in environment file
+  ini_file:
+    path: /etc/environment
+    section: ""
+    option: "{{item.0}}"
+    value: "{{item.1}}"
+    no_extra_spaces: yes
+  loop: "{{['http_proxy', 'https_proxy', 'no_proxy'] | zip([http_proxy, http_proxy, '127.0.0.1,localhost']) | list}}"
+  delegate_to: "{{vm}}"
+
+- name: Configure yum.conf to use proxy
+  ini_file:
+    path: /etc/yum.conf
+    section: main
+    option: proxy
+    value: '{{ http_proxy }}'
+  delegate_to: "{{vm}}"
+
+- name: Configure yum.conf to only cache packages
+  ini_file:
+    path: /etc/yum.conf
+    section: main
+    option: http_caching
+    value: packages
+  delegate_to: "{{vm}}"
+
+- name: Source env file
+  shell: source /etc/environment
+  delegate_to: "{{vm}}"

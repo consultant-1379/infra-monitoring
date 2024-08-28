@@ -1,0 +1,33 @@
+{
+  "checks": {
+    "glance_api_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins/check_glance-api.sh -U $OS_USERNAME -T $OS_PROJECT_NAME -P $OS_PASSWORD -H $OS_AUTH_URL",
+      "subscribers":["osk_controller"],
+      "interval": 60
+    },
+    "heat_api_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins/check_heat-api.sh -U $OS_USERNAME -T $OS_PROJECT_NAME -P $OS_PASSWORD -H $OS_AUTH_URL",
+      "subscribers":["osk_controller"],
+      "interval": 60
+    },
+    "neutron_api_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins/check_neutron-api.sh -U $OS_USERNAME -T $OS_PROJECT_NAME -P $OS_PASSWORD -H $OS_AUTH_URL",
+      "subscribers":["osk_controller"],
+      "interval": 60
+    },
+    "nova_api_controller": {
+      "handlers": ["mailer"],
+      "contacts": ["Cloud_Team"],
+      "command": "/etc/sensu/conf.d/plugins/check_nova-api.sh -U $OS_USERNAME -T $OS_PROJECT_NAME -P $OS_PASSWORD -H $OS_AUTH_URL",
+      "subscribers":["osk_controller"],
+      "interval": 60
+    }
+  }
+}
+

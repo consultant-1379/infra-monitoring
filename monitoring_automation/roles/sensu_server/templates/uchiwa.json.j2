@@ -1,0 +1,29 @@
+{
+ "sensu": [
+   {
+       "name": "{{ sensu_shortname }}",
+       "host": "{{ sensu_fqdn }}",
+       "ssl": false,
+       "port": 4567,
+       "user": "admin",
+       "pass": "secret",
+       "path": "",
+       "timeout": 5000
+   }
+ ],
+ "uchiwa": {
+   "users": [
+    {
+        "username": "admin",
+        "password": "{{uchiwa_admin}}"
+    },
+    {
+        "username": "guest",
+        "password": "{{uchiwa_guest}}",
+        "readonly": true
+    }
+],
+   "port": 3000,
+   "refresh": 5
+  }
+}
